@@ -1,8 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import {
   OrbitControls,
-  Box,
   Plane,
   Edges,
   Html,
@@ -11,13 +10,14 @@ import {
   Cone,
   Sphere,
   Dodecahedron,
+  Ring,
+  Circle,
 } from "@react-three/drei";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 
 const API_URL = "https://games-test.datsteam.dev/api/arena";
 const AUTH_TOKEN = import.meta.env.VITE_API_TOKEN as string;
 
-// --- ТИПИЗАЦИЯ ---
 type Coordinate = [number, number];
 
 interface Plantation {
@@ -39,14 +39,12 @@ interface Cell {
   position: Coordinate;
 }
 
-// Предполагаемая структура логова бобров
 interface BeaverLair {
   id: string;
   position: Coordinate;
   hp: number;
 }
 
-// Предполагаемая структура катаклизмов
 interface MeteoForecast {
   type: "storm" | "earthquake";
   name?: string;
@@ -65,13 +63,12 @@ interface ArenaData {
   enemy: Enemy[];
   mountains: Coordinate[];
   cells: Cell[];
-  beavers?: BeaverLair[]; // Добавлено поле для бобров
-  meteoForecasts?: MeteoForecast[]; // Добавлено поле для погоды
+  beavers?: BeaverLair[];
+  meteoForecasts?: MeteoForecast[];
   plantationUpgrades: {
     points: number;
   };
 }
-// -----------------
 
 const CameraSetup = ({ plantations }: { plantations?: Plantation[] }) => {
   const { camera } = useThree();
@@ -102,7 +99,7 @@ const Ground = () => (
     </Plane>
     <gridHelper
       args={[1000, 1000, "#a0522d", "#cdaa7d"]}
-      position={[500, -0.49, 500]}
+      position={[500.5, -0.49, 500.5]}
     />
   </group>
 );
@@ -193,6 +190,7 @@ const ArenaScene = ({ arenaData }: { arenaData: ArenaData | null }) => {
     cells = [],
     beavers = [],
     meteoForecasts = [],
+    actionRange = 0,
   } = arenaData;
 
   const isReinforcedCell = (x: number, y: number) => x % 7 === 0 && y % 7 === 0;
@@ -206,14 +204,14 @@ const ArenaScene = ({ arenaData }: { arenaData: ArenaData | null }) => {
 
       {/* Горы */}
       {mountains.map((pos, idx) => (
-        <Box
+        <Cone
           key={`mountain-${idx}`}
-          position={[pos[0], 0, pos[1]]}
-          args={[1, 1, 1]}
+          args={[0.6, 1, 4]} // радиус основания, высота, количество сегментов (4 → квадратная пирамида)
+          position={[pos[0], 0.5, pos[1]]} // поднято на половину высоты, чтобы основание было на земле
         >
-          <meshStandardMaterial color="#a96a07" />
-          <Edges color="#ad5507" />
-        </Box>
+          <meshStandardMaterial color="#888888" />
+          <Edges color="#555555" />
+        </Cone>
       ))}
 
       {/* Терраформированные клетки */}
@@ -277,13 +275,12 @@ const ArenaScene = ({ arenaData }: { arenaData: ArenaData | null }) => {
               <meshStandardMaterial color="#8b4513" />
               <Edges color="#5c3317" />
             </Dodecahedron>
-            {/* У бобров 100 базовых HP согласно доке */}
             <FloatingUI hp={beaver.hp} maxHp={100} type="beaver" />
           </group>
         );
       })}
 
-      {/* Свои плантации */}
+      {/* Свои плантации + Граница видимости (actionRange) */}
       {plantations.map((plant) => {
         const [x, y] = plant.position;
         let color = "#1e90ff";
@@ -299,6 +296,20 @@ const ArenaScene = ({ arenaData }: { arenaData: ArenaData | null }) => {
 
         return (
           <group key={`plant-${plant.id}`} position={[x, 0, y]}>
+            {/* Отрисовка зоны действия/видимости (actionRange) */}
+            {actionRange > 0 && !plant.isIsolated && (
+              <group position={[0, -0.47, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                {/* Полупрозрачная заливка зоны */}
+                <Circle args={[actionRange, 32]}>
+                  <meshBasicMaterial color={color} transparent opacity={0.05} />
+                </Circle>
+                {/* Яркое кольцо по границе */}
+                <Ring args={[actionRange - 0.2, actionRange, 64]}>
+                  <meshBasicMaterial color={color} transparent opacity={0.3} />
+                </Ring>
+              </group>
+            )}
+
             {plant.isMain ? (
               <Octahedron args={[0.6]} position={[0, 0.6, 0]}>
                 <meshStandardMaterial color={color} transparent opacity={0.6} />
@@ -335,31 +346,47 @@ const ArenaScene = ({ arenaData }: { arenaData: ArenaData | null }) => {
 export default function DatsSolMap() {
   const [arenaData, setArenaData] = useState<ArenaData | null>(null);
   const [isPaused, setIsPaused] = useState(false);
-  const [error, setError] = useState(null);
+
+  const [error, setError] = useState<Error | AxiosError | null>(null);
+
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchArena = useCallback(async () => {
+    try {
+      const response = await axios.get<ArenaData>(API_URL, {
+        headers: { "X-Auth-Token": AUTH_TOKEN },
+      });
+
+      // Чтобы избежать "Cascading renders", обновляем состояние ошибки только если она была
+      setError((prev) => (prev === null ? null : null));
+      setArenaData(response.data);
+    } catch (err) {
+      const axiosError = err as AxiosError;
+      setError(axiosError);
+      console.error("Ошибка получения данных арены:", axiosError.message);
+    }
+  }, []); // Зависимостей нет, функция стабильна
 
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
+    const tick = async () => {
+      if (isPaused) return;
 
-    const fetchArena = async () => {
-      try {
-        const response = await axios.get(API_URL, {
-          headers: { "X-Auth-Token": AUTH_TOKEN },
-        });
-        setError(null);
-        setArenaData(response.data);
-      } catch (error) {
-        setError(error);
-        console.error("Ошибка получения данных арены:", error);
-      }
+      await fetchArena();
+
+      // Планируем следующий запрос строго через 1000мс после завершения текущего
+      timerRef.current = setTimeout(tick, 1000);
     };
 
     if (!isPaused) {
-      fetchArena();
-      interval = setInterval(fetchArena, 1000);
+      timerRef.current = setTimeout(tick, 0);
     }
 
-    return () => clearInterval(interval);
-  }, [isPaused]);
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [isPaused, fetchArena]);
 
   const controlsTarget = useMemo<[number, number, number]>(() => {
     if (!arenaData || !arenaData.plantations) return [400, 0, 300];
@@ -370,7 +397,6 @@ export default function DatsSolMap() {
       : [400, 0, 300];
   }, [arenaData?.plantations]);
 
-  // Проверяем наличие активных землетрясений (глобальный эвент)
   const hasEarthquake = arenaData?.meteoForecasts?.some(
     (m) => m.type === "earthquake",
   );
@@ -381,7 +407,7 @@ export default function DatsSolMap() {
         <div
           style={{
             position: "absolute",
-            top: 0, 
+            top: 0,
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 10,
@@ -394,13 +420,16 @@ export default function DatsSolMap() {
             maxWidth: "80%",
             width: "100%",
             height: "20px",
-            textAlign: "center", 
+            textAlign: "center",
             display: "flex",
-            alignItems: "center", 
+            alignItems: "center",
             justifyContent: "center",
           }}
         >
-          Ошибка - возможно раунд закончен {error}
+          ⚠️ Ошибка:{" "}
+          {error instanceof AxiosError
+            ? error.response?.statusText || error.message
+            : error.message}
         </div>
       )}
       <div
@@ -470,6 +499,12 @@ export default function DatsSolMap() {
           <div>
             Очки апгрейдов:{" "}
             <strong>{arenaData?.plantationUpgrades?.points || 0}</strong>
+          </div>
+          <div>
+            Дальность действий:{" "}
+            <strong style={{ color: "#1e90ff" }}>
+              {arenaData?.actionRange || 0}
+            </strong>
           </div>
           <div>
             Своих плантаций:{" "}
