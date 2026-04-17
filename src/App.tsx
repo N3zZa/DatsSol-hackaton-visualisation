@@ -56,6 +56,13 @@ interface MeteoForecast {
   turnsUntilImpact?: number; // Ходов до формирования/удара
 }
 
+interface UpgradeTier {
+  name: string;
+  current: number;
+  max: number;
+}
+
+
 interface ArenaData {
   turnNo: number;
   nextTurnIn: number;
@@ -69,6 +76,7 @@ interface ArenaData {
   meteoForecasts?: MeteoForecast[];
   plantationUpgrades: {
     points: number;
+    tiers?: UpgradeTier[];
   };
 }
 
@@ -430,6 +438,8 @@ export default function DatsSolMap() {
     (m) => m.type === "earthquake",
   );
 
+  const upgradeTiers = arenaData?.plantationUpgrades?.tiers || [];
+
   return (
     <div style={{ width: "100vw", height: "100vh", background: "#111" }}>
       {error !== null && (
@@ -529,6 +539,34 @@ export default function DatsSolMap() {
             Очки апгрейдов:{" "}
             <strong>{arenaData?.plantationUpgrades?.points || 0}</strong>
           </div>
+          {upgradeTiers.length > 0 && (
+            <>
+              <div style={{ marginTop: "12px", marginBottom: "4px" }}>
+                🔧 Апгрейды:
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, 1fr)",
+                  gap: "6px 10px",
+                  fontSize: "12px",
+                  background: "rgba(255,255,255,0.1)",
+                  padding: "8px",
+                  borderRadius: "6px",
+                  marginBottom: "10px",
+                }}
+              >
+                {upgradeTiers.map((tier, idx) => (
+                  <div key={idx} style={{ whiteSpace: "nowrap" }}>
+                    <span style={{ color: "#ffaa66" }}>{tier.name}</span>:{" "}
+                    {tier.current}/{tier.max}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          <hr style={{ borderColor: "#444", margin: "10px 0" }} />
           <div>
             Дальность действий:{" "}
             <strong style={{ color: "#1e90ff" }}>
