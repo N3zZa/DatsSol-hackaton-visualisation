@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
-import { OrbitControls, Box, Plane, Edges } from "@react-three/drei";
+import { OrbitControls, Box, Plane, Edges, Html, Octahedron, Cylinder, Cone } from "@react-three/drei";
 import axios from "axios";
 
 const API_URL = "https://games-test.datsteam.dev/api/arena";
@@ -44,7 +44,59 @@ const Ground = () => (
   </group>
 );
 
+const FloatingUI = ({ hp, isMain, isEnemy, isIsolated }) => {
+  // Базовое максимальное здоровье плантации — 50 (может быть увеличено апгрейдами)
+  const maxHp = 50;
+  const hpPercent = Math.min((hp / maxHp) * 100, 100);
 
+  let icon = "🏭"; // Обычная плантация
+  if (isMain) icon = "👑"; // ЦУ
+  if (isEnemy) icon = "⚔️"; // Враг
+  if (isIsolated) icon = "🔌"; // Изолирована
+
+  return (
+    <Html position={[0, 1.2, 0]} center style={{ pointerEvents: "none" }}>
+      <div
+        style={{
+          background: "rgba(0, 0, 0, 0.7)",
+          color: "white",
+          padding: "4px 8px",
+          borderRadius: "4px",
+          fontFamily: "monospace",
+          fontSize: "12px",
+          textAlign: "center",
+          border: `1px solid ${isEnemy ? "#ff4500" : isMain ? "#ff00ff" : "#1e90ff"}`,
+          whiteSpace: "nowrap",
+        }}
+      >
+        <div style={{ fontSize: "14px", marginBottom: "2px" }}>
+          {icon} HP: {hp}
+        </div>
+        {/* Полоска здоровья */}
+        <div
+          style={{
+            width: "60px",
+            height: "4px",
+            background: "#333",
+            borderRadius: "2px",
+            overflow: "hidden",
+            margin: "0 auto",
+          }}
+        >
+          <div
+            style={{
+              width: `${hpPercent}%`,
+              height: "100%",
+              background:
+                hp > 20 ? (isEnemy ? "#ff4500" : "#32cd32") : "#ff0000",
+              transition: "width 0.3s",
+            }}
+          />
+        </div>
+      </div>
+    </Html>
+  );
+};
 
 
 // Компонент отрисовки игровых объектов
@@ -103,25 +155,33 @@ const ArenaScene = ({ arenaData }) => {
       {/* Отрисовка плантаций игрока */}
       {plantations.map((plant) => {
         const [x, y] = plant.position;
-        let color = "#1e90ff"; // Обычная (синяя)
-        let height = 0.8;
+        let color = "#1e90ff";
 
-        if (plant.isMain) {
-          color = "#ff00ff"; // ЦУ (пурпурный)
-          height = 1.5;
-        } else if (plant.isIsolated) {
-          color = "#888888"; // Изолированная (серая)
-        }
+        if (plant.isMain) color = "#ff00ff";
+        else if (plant.isIsolated) color = "#888888";
 
         return (
-          <Box
-            key={`plant-${plant.id}`}
-            position={[x, height / 2, y]}
-            args={[0.8, height, 0.8]}
-          >
-            <meshStandardMaterial color={color} />
-            <Edges color="#ffffff" /> {/* Белые края для своих зданий */}
-          </Box>
+          <group key={`plant-${plant.id}`} position={[x, 0, y]}>
+            {plant.isMain ? (
+              // ЦУ - Октаэдр
+              <Octahedron args={[0.6]} position={[0, 0.6, 0]}>
+                <meshStandardMaterial color={color} transparent opacity={0.6} />
+                <Edges color="#ffffff" />
+              </Octahedron>
+            ) : (
+              // Обычная плантация - Цилиндр
+              <Cylinder args={[0.4, 0.4, 0.8, 16]} position={[0, 0.4, 0]}>
+                <meshStandardMaterial color={color} transparent opacity={0.6} />
+                <Edges color="#ffffff" />
+              </Cylinder>
+            )}
+            <FloatingUI
+              hp={plant.hp}
+              isMain={plant.isMain}
+              isIsolated={plant.isIsolated}
+              isEnemy={false}
+            />
+          </group>
         );
       })}
 
@@ -129,14 +189,14 @@ const ArenaScene = ({ arenaData }) => {
       {enemy.map((en) => {
         const [x, y] = en.position;
         return (
-          <Box
-            key={`enemy-${en.id}`}
-            position={[x, 0.4, y]}
-            args={[0.8, 0.8, 0.8]}
-          >
-            <meshStandardMaterial color="#ff4500" />
-            <Edges color="#000000" /> {/* Черные края для врагов */}
-          </Box>
+          <group key={`enemy-${en.id}`} position={[x, 0, y]}>
+            {/* Вражеская плантация - Пирамида */}
+            <Cone args={[0.5, 1, 4]} position={[0, 0.5, 0]}>
+              <meshStandardMaterial color="#ff4500" transparent opacity={0.6} />
+              <Edges color="#000000" />
+            </Cone>
+            <FloatingUI hp={en.hp} isEnemy={true} isMain={undefined} isIsolated={undefined} />
+          </group>
         );
       })}
     </>
