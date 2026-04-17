@@ -37,6 +37,8 @@ interface Enemy {
 
 interface Cell {
   position: Coordinate;
+  terraformationProgress: number;
+  turnsUntilDegradation: number;
 }
 
 interface BeaverLair {
@@ -206,8 +208,8 @@ const ArenaScene = ({ arenaData }: { arenaData: ArenaData | null }) => {
       {mountains.map((pos, idx) => (
         <Cone
           key={`mountain-${idx}`}
-          args={[0.6, 1, 4]} // радиус основания, высота, количество сегментов (4 → квадратная пирамида)
-          position={[pos[0], 0.5, pos[1]]} // поднято на половину высоты, чтобы основание было на земле
+          args={[0.6, 1, 4]}
+          position={[pos[0], 0.5, pos[1]]}
         >
           <meshStandardMaterial color="#888888" />
           <Edges color="#555555" />
@@ -215,24 +217,51 @@ const ArenaScene = ({ arenaData }: { arenaData: ArenaData | null }) => {
       ))}
 
       {/* Терраформированные клетки */}
-      {cells.map((cell, idx) => (
-        <Plane
-          key={`cell-${idx}`}
-          position={[cell.position[0], -0.48, cell.position[1]]}
-          rotation={[-Math.PI / 2, 0, 0]}
-          args={[1, 1]}
-        >
-          <meshBasicMaterial
-            color={
-              isReinforcedCell(cell.position[0], cell.position[1])
-                ? "rgb(240, 196, 21)"
-                : "#10d24a"
-            }
-            transparent
-            opacity={0.8}
-          />
-        </Plane>
-      ))}
+      {cells.map((cell, idx) => {
+        const degradation = cell.turnsUntilDegradation;
+        return (
+          <group
+            key={`cell-${idx}`}
+            position={[cell.position[0], 0, cell.position[1]]}
+          >
+            <Plane
+              position={[0, -0.48, 0]}
+              rotation={[-Math.PI / 2, 0, 0]}
+              args={[1, 1]}
+            >
+              <meshBasicMaterial
+                color={
+                  isReinforcedCell(cell.position[0], cell.position[1])
+                    ? "rgb(240, 196, 21)"
+                    : "#10d24a"
+                }
+                transparent
+                opacity={0.8}
+              />
+            </Plane>
+            <Html
+              position={[0, -0.5, 0]}
+              center
+              style={{ pointerEvents: "none" }}
+            >
+              <div
+                style={{
+                  background: "rgba(0,0,0,0.6)",
+                  color: "white",
+                  fontSize: "10px",
+                  padding: "2px 4px",
+                  borderRadius: "3px",
+                  fontFamily: "monospace",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                🌱Прогресс: {cell.terraformationProgress}%{" "}
+                {degradation > 0 ? `⏳${degradation}` : "⚠️Деградация"}
+              </div>
+            </Html>
+          </group>
+        );
+      })}
 
       {/* Песчаные бури */}
       {meteoForecasts
