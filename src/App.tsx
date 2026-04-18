@@ -24,7 +24,7 @@ import { Factory } from "./components/Factory";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { Grass } from "./components/Grass";
 
-const API_URL = "https://games-test.datsteam.dev/api/arena";
+const API_URL = "https://games.datsteam.dev/api/arena";
 const AUTH_TOKEN = import.meta.env.VITE_API_TOKEN as string;
 
 type Coordinate = [number, number];
