@@ -11,7 +11,6 @@ type GLTFResult = GLTF & {
   };
 };
 
-// Добавляем пропсы для цвета и силы свечения
 interface LabProps {
   teamColor?: string;
   glow?: number;

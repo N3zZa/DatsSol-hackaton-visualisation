@@ -13,7 +13,6 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import { useMemo } from "react";
 
-// 1. Космос теперь двигается за фокусом (иллюзия бесконечности)
 export function SpaceBackground({
   target,
 }: {
@@ -35,17 +34,15 @@ export function SpaceBackground({
 
 useGLTF.preload("/space.glb");
 
-// Компонент процедурных астероидов
 const AsteroidBelt = ({ radius, count = 150 }) => {
   const asteroids = useMemo(() => {
     const temp = [];
     for (let i = 0; i < count; i++) {
-      // Распределяем астероиды кольцом вокруг планеты
       const angle = Math.random() * Math.PI * 2;
-      const distance = radius + 40 + Math.random() * 80; // Дистанция от края
+      const distance = radius + 40 + Math.random() * 80;
       const x = Math.cos(angle) * distance;
       const z = Math.sin(angle) * distance;
-      const y = 20 + (Math.random() - 0.5) * 25; // Небольшой разброс по высоте
+      const y = 20 + (Math.random() - 0.5) * 25; 
       const scale = 0.5 + Math.random() * 2;
       const rotation = [Math.random() * Math.PI, Math.random() * Math.PI, 0];
       temp.push({ position: [x, y, z], scale, rotation });
@@ -55,7 +52,7 @@ const AsteroidBelt = ({ radius, count = 150 }) => {
 
   return (
     <Instances limit={count} castShadow receiveShadow>
-      <dodecahedronGeometry args={[1, 0]} /> {/* Low-poly камни */}
+      <dodecahedronGeometry args={[1, 0]} /> 
       <meshStandardMaterial color="#555566" roughness={0.8} />
       {asteroids.map((ast, i) => (
         <Instance
@@ -86,7 +83,6 @@ export const PlanetSurface = ({ mapSize }: { mapSize: [number, number] }) => {
 
         <meshStandardMaterial color="#2a2a35" roughness={0.9} metalness={0.1} />
       </Circle> */}
-      {/* 2. Тело планеты снизу */}
       <Sphere
         args={[radius, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2]}
         rotation={[Math.PI, 0, 0]}
@@ -95,8 +91,7 @@ export const PlanetSurface = ({ mapSize }: { mapSize: [number, number] }) => {
         <meshStandardMaterial color="#1a1a25" roughness={1} />
       </Sphere>
 
-      {/* 3. ОБЪЕМНАЯ АТМОСФЕРА */}
-      {/* Сфера чуть большего размера с аддитивным смешиванием (эффект свечения газа) */}
+      {/* ОБЪЕМНАЯ АТМОСФЕРА */}
       <Sphere args={[radius * 1.05, 64, 64]} position={[0, -20, 0]}>
         <meshBasicMaterial
           color="#2266cc"
@@ -104,11 +99,11 @@ export const PlanetSurface = ({ mapSize }: { mapSize: [number, number] }) => {
           opacity={0.05}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
-          side={THREE.BackSide} // Рендерим только внутреннюю сторону, чтобы не перекрывать камеру
+          side={THREE.BackSide}
         />
       </Sphere>
 
-      {/* 4. Космическое окружение */}
+      {/* Космическое окружение */}
       <Stars
         radius={300}
         depth={60}
@@ -127,10 +122,10 @@ export const PlanetSurface = ({ mapSize }: { mapSize: [number, number] }) => {
         opacity={0.5}
       />
 
-      {/* 5. Пояс астероидов */}
+      {/* Пояс астероидов */}
       <AsteroidBelt radius={radius} count={200} />
 
-      {/* Sci-fi сетка (делаем ее тоньше и прозрачнее) */}
+      {/* Sci-fi сетка */}
       {/* <gridHelper
         args={[maxDim, maxDim, "#445588", "#af8137"]}
         position={[0.5, -0.49, 0.5]}
@@ -139,7 +134,6 @@ export const PlanetSurface = ({ mapSize }: { mapSize: [number, number] }) => {
   );
 };
 
-// 1. Компонент процедурного камня
 const ProceduralRock = ({
   position,
   scale,
@@ -151,12 +145,10 @@ const ProceduralRock = ({
     <mesh
       position={position}
       scale={scale}
-      // Случайный поворот, чтобы камни выглядели по-разному
       rotation={[Math.random() * Math.PI, Math.random() * Math.PI, 0]}
       castShadow
       receiveShadow
     >
-      {/* Додекаэдр с детализацией 0 выглядит как отличный лоу-поли булыжник */}
       <dodecahedronGeometry args={[1, 0]} />
       <meshStandardMaterial color="#6b5b4f" roughness={0.9} metalness={0.1} />
     </mesh>
@@ -174,7 +166,6 @@ const FollowGrid = ({
 
   useFrame(() => {
     if (gridRef.current && target) {
-      // Плавно перемещаем сетку за целью, но оставляем её на фиксированной высоте
       gridRef.current.position.set(target[0], 0.02, target[2]);
     }
   });
@@ -183,7 +174,7 @@ const FollowGrid = ({
     <group ref={gridRef}>
       <gridHelper
         args={[size, size, "#af8137", "#b1ada5"]}
-        position={[0.5, -0.45, 0.5]} // Чуть выше земли, чтобы не было мерцания
+        position={[0.5, -0.45, 0.5]}
       />
     </group>
   );
@@ -225,7 +216,6 @@ const RocksInRadius = ({
   );
 };
 
-// 2. Новая объемная земля (Волны появятся, когда добавишь текстуры)
 export const VolumetricGround = ({
   mapSize,
   target,
@@ -234,7 +224,7 @@ export const VolumetricGround = ({
   target: [number, number, number];
 }) => {
   const maxDim = Math.max(mapSize[0], mapSize[1]);
-  const radius = maxDim * 0.6; // Радиус нашей игровой зоны
+  const radius = maxDim * 0.6; 
 
   const [colorMap, normalMap, displacementMap, roughnessMap, aoMap] =
     useTexture([
@@ -246,7 +236,7 @@ export const VolumetricGround = ({
     ]);
 
   useMemo(() => {
-    const textureScale = 0.2; // Настройка плотности текстуры
+    const textureScale = 0.2; 
     [colorMap, normalMap, displacementMap, roughnessMap, aoMap].forEach((t) => {
       t.wrapS = t.wrapT = THREE.RepeatWrapping;
       t.repeat.set(radius * textureScale, radius * textureScale);
@@ -256,9 +246,8 @@ export const VolumetricGround = ({
 
   return (
     <group>
-      {/* ПЛАНЕТАРНЫЙ ДИСК (Объемный) */}
+      {/* ПЛАНЕТАРНЫЙ ДИСК  */}
       <mesh position={[mapSize[0] / 2, -1.0, mapSize[1] / 2]} receiveShadow>
-        {/* CylinderGeometry: верхний радиус, нижний радиус, высота, сегменты по кругу, сегменты по высоте */}
         <cylinderGeometry args={[radius, radius, 1.5, 128, 64]} />
 
         <meshStandardMaterial
@@ -269,7 +258,7 @@ export const VolumetricGround = ({
           displacementMap={displacementMap}
           displacementScale={0.4}
           displacementBias={-0.5}
-          color="#e3c08d" // Песчаный оттенок, подкрашивающий текстуру
+          color="#e3c08d" 
           metalness={0.0}
         />
       </mesh>

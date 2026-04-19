@@ -4,7 +4,6 @@ import { useGLTF } from "@react-three/drei";
 import type { GLTF } from "three-stdlib";
 
 type GLTFResult = GLTF & {
-  // ... твои типы nodes и materials оставляем как есть ...
   nodes: {
     Grass1_Grass_Mat_0: THREE.Mesh;
     Grass1_Grass2_Mat_0: THREE.Mesh;
@@ -32,16 +31,11 @@ type GLTFResult = GLTF & {
 export function Grass(props: JSX.IntrinsicElements["group"]) {
   const { nodes, materials } = useGLTF("/grass.glb") as unknown as GLTFResult;
 
-  // ДОБАВЛЯЕМ ЭТОТ ХУК
   useEffect(() => {
-    // Проходимся по всем импортированным материалам
     Object.values(materials).forEach((mat) => {
       if (mat instanceof THREE.MeshStandardMaterial) {
-        // Красим в зеленый (можешь подобрать нужный оттенок HEX)
         mat.color.set("#2d8a2a");
 
-        // Делаем траву матовой, иначе твой directionalLight
-        // с intensity={2} и Bloom превратят её обратно в белую лампу
         mat.roughness = 0.9;
         mat.metalness = 0.0;
       }
@@ -50,7 +44,6 @@ export function Grass(props: JSX.IntrinsicElements["group"]) {
 
   return (
     <group {...props} dispose={null}>
-      {/* ... твой оригинальный JSX возвращаем без изменений ... */}
       <group scale={0.01}>
         <mesh
           castShadow

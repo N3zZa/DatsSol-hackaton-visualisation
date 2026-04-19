@@ -100,7 +100,6 @@ const CameraSetup = ({
   const prevTarget = useRef(target);
 
   useEffect(() => {
-    // 1. Установка камеры при первой загрузке данных
     if (!isInitialized.current && hasData) {
       camera.position.set(target[0], 150, target[2] + 200);
       isInitialized.current = true;
@@ -108,7 +107,6 @@ const CameraSetup = ({
       return;
     }
 
-    // 2. Прыжок камеры при клике на другого юнита (сохраняем ракурс)
     if (
       isInitialized.current &&
       (prevTarget.current[0] !== target[0] ||
@@ -247,12 +245,12 @@ const ArenaScene = ({ arenaData }: { arenaData: ArenaData | null }) => {
     <>
       <ambientLight intensity={0.6} />
       <directionalLight
-        position={[500, 400, -200]} // Подняли повыше и поставили под углом
+        position={[500, 400, -200]} 
         intensity={2}
-        color="#fff5e6" // Теплый солнечный свет
+        color="#fff5e6"
         castShadow
-        shadow-mapSize={[4096, 4096]} // Разрешение теней (можно 2048 для оптимизации)
-        shadow-bias={-0.0005} // Спасает от артефактов "лесенки" на тенях
+        shadow-mapSize={[4096, 4096]} 
+        shadow-bias={-0.0005}
       >
         <orthographicCamera
           attach="shadow-camera"
@@ -261,8 +259,6 @@ const ArenaScene = ({ arenaData }: { arenaData: ArenaData | null }) => {
           far={2000}
         />
       </directionalLight>
-
-      {/* <Ground /> */}
 
       {/* Горы */}
       {mountains.map((pos) => (
@@ -284,7 +280,6 @@ const ArenaScene = ({ arenaData }: { arenaData: ArenaData | null }) => {
             key={`cell-${idx}`}
             position={[cell.position[0], 0, cell.position[1]]}
           >
-            {/* Оставляем подложку, чтобы клетка выделялась цветом */}
             <Plane
               position={[0, -0.42, 0]}
               rotation={[-Math.PI / 2, 0, 0]}
@@ -297,8 +292,6 @@ const ArenaScene = ({ arenaData }: { arenaData: ArenaData | null }) => {
               />
             </Plane>
 
-            {/* ДОБАВЛЯЕМ ТРАВУ */}
-            {/* Если клетка не деградирует (или прогресс высокий), рендерим траву */}
             {cell.terraformationProgress > 10 && !isOccupied && (
               <group position={[0, -0.42, 0]}>
                 <Grass scale={cell.terraformationProgress < 50 ? 0.15 : 0.3} />
@@ -371,7 +364,7 @@ const ArenaScene = ({ arenaData }: { arenaData: ArenaData | null }) => {
         );
       })}
 
-      {/* Свои плантации + Граница видимости (actionRange) */}
+      {/* Свои плантации + граница видимости  */}
       {plantations.map((plant) => {
         const [x, y] = plant.position;
         let color = "#1e90ff";
@@ -387,14 +380,11 @@ const ArenaScene = ({ arenaData }: { arenaData: ArenaData | null }) => {
 
         return (
           <group key={`plant-${plant.id}`} position={[x, 0, y]}>
-            {/* Отрисовка зоны действия/видимости (actionRange) */}
             {actionRange > 0 && !plant.isIsolated && (
               <group position={[0, -0.425, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                {/* Полупрозрачная заливка зоны */}
                 <Circle args={[actionRange, 32]}>
                   <meshBasicMaterial color={color} transparent opacity={0.05} />
                 </Circle>
-                {/* Яркое кольцо по границе */}
                 <Ring args={[actionRange - 0.1, actionRange, 32]}>
                   <meshBasicMaterial color={color} transparent opacity={0.3} />
                 </Ring>
@@ -448,7 +438,6 @@ export default function DatsSolMap() {
         headers: { "X-Auth-Token": AUTH_TOKEN },
       });
 
-      // Чтобы избежать "Cascading renders", обновляем состояние ошибки только если она была
       setError((prev) => (prev === null ? null : null));
       setArenaData(response.data);
     } catch (err) {
@@ -456,7 +445,7 @@ export default function DatsSolMap() {
       setError(axiosError);
       console.error("Ошибка получения данных арены:", axiosError.message);
     }
-  }, []); // Зависимостей нет, функция стабильна
+  }, []);
 
   useEffect(() => {
     const tick = async () => {
@@ -464,7 +453,6 @@ export default function DatsSolMap() {
 
       await fetchArena();
 
-      // Планируем следующий запрос строго через 1000мс после завершения текущего
       timerRef.current = setTimeout(tick, 1000);
     };
 
@@ -480,7 +468,6 @@ export default function DatsSolMap() {
   }, [isPaused, fetchArena]);
 
   const controlsTarget = useMemo<[number, number, number]>(() => {
-    // Если мы кликнули на юнита в меню — смотрим на него
     if (focusedPos) return focusedPos;
 
     if (
@@ -616,7 +603,6 @@ export default function DatsSolMap() {
             )}
 
             <div style={{ fontSize: "14px", lineHeight: "1.5" }}>
-              {/* Всё содержимое, которое было внутри, оставляем без изменений */}
               <div>
                 Ход:{" "}
                 <strong style={{ color: "#00ff00" }}>
@@ -785,9 +771,9 @@ export default function DatsSolMap() {
       </div>
 
       <Canvas
-        style={{ background: "#020205" }} // Не чисто черный, а цвет глубокого космоса
+        style={{ background: "#020205" }}
         shadows
-        camera={{ fov: 50, position: [10, 10, 10] }} // Камеру лучше поставить повыше
+        camera={{ fov: 50, position: [10, 10, 10] }} 
       >
         <SpaceBackground target={controlsTarget} />
         <VolumetricGround
@@ -805,18 +791,16 @@ export default function DatsSolMap() {
               : [1000, 1000]
           }
         />
-        {/* Освещение делаем контрастным */}
         <Environment preset="sunset" />
         <ambientLight intensity={0.4} color="#88aaff" />
         <directionalLight
-          position={[500, 400, -200]} // Подняли повыше и поставили под углом
+          position={[500, 400, -200]} 
           intensity={2}
-          color="#fff5e6" // Теплый солнечный свет
+          color="#fff5e6" 
           castShadow
-          shadow-mapSize={[4096, 4096]} // Разрешение теней (можно 2048 для оптимизации)
-          shadow-bias={-0.0005} // Спасает от артефактов "лесенки" на тенях
+          shadow-mapSize={[4096, 4096]} 
+          shadow-bias={-0.0005}
         >
-          {/* Увеличиваем зону покрытия тенями */}
           <orthographicCamera
             attach="shadow-camera"
             args={[-800, 800, 800, -800]}
@@ -824,7 +808,6 @@ export default function DatsSolMap() {
             far={2000}
           />
         </directionalLight>
-        {/* Подсветка планеты с обратной стороны (Reflected light) */}
         <pointLight position={[500, -100, 500]} intensity={2} color="#3366ff" />
         <CameraSetup target={controlsTarget} hasData={!!arenaData} />
         <OrbitControls
@@ -840,11 +823,9 @@ export default function DatsSolMap() {
           enableDamping={false}
         />
         <ArenaScene arenaData={arenaData} />
-        {/* МАГИЯ КИНО: ПОСТ-ПРОЦЕССИНГ */}
-        <EffectComposer disableNormalPass>
-          {/* Bloom заставит светиться все яркие цвета (Ваши лазеры, неон, UI) */}
+        <EffectComposer enableNormalPass>
           <Bloom
-            luminanceThreshold={1} // Светится только то, что ярче 1
+            luminanceThreshold={1} 
             mipmapBlur
             intensity={1.5}
           />
