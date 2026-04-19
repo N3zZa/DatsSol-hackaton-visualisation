@@ -1,73 +1,65 @@
-# React + TypeScript + Vite
+# DatsSol Hackaton – 3D Space Visualization
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interactive 3D map for the DatsSol arena game.  
+Built with React, Three.js (React Three Fiber), and TypeScript.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- 🪐 **Real-time arena data** – auto‑refreshes every second via REST API  
+- 🏭 **3D units** – main laboratory, factories, enemies, beavers, mountains  
+- 🌿 **Terraformed cells** – progress & degradation indicators with grass rendering  
+- 🌪 **Weather effects** – sandstorms and earthquakes (visual + alerts)  
+- 📊 **Upgrade panel** – show upgrade tiers and points  
+- 🎥 **Smart camera** – click on any base to instantly jump to its location  
+- 💾 **Collapsible UI panels** – left info panel and right base list  
+- ✨ **Post‑processing** – bloom, vignette, volumetric ground, space background  
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 18 + TypeScript  
+- Vite  
+- React Three Fiber / Drei  
+- Three.js (shadow maps, fog, effects)  
+- Axios  
+- Postprocessing (Bloom, Vignette)  
 
-## Expanding the ESLint configuration
+## Installation
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+git clone https://github.com/N3zZa/DatsSol-hackaton-visualisation
+cd datssol-map
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Environment Variables
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Create a `.env` file in the root:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_API_TOKEN=your_arena_api_token_here
 ```
+
+## Development
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173)
+
+
+## Usage
+
+- Left panel – shows turn number, upgrade points, action range, etc.  
+- Right panel – list of your plantations, click to focus camera.  
+- Pause button – stops auto‑refresh.  
+- Drag / rotate / zoom – standard OrbitControls (no damping).  
+
+## API Endpoint
+
+`https://games-test.datsteam.dev/api/arena`  
+Requires `X-Auth-Token` header.
+
+## License
+
+MIT
